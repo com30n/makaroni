@@ -3,7 +3,7 @@ package makaroni
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"log"
+	log "github.com/sirupsen/logrus"
 	"net/http"
 	"strings"
 )
@@ -20,31 +20,41 @@ type PasteHandler struct {
 	MultipartMaxMemory int64
 }
 
+// RespondServerInternalError sends a response with status 500 and logs the error.
 func RespondServerInternalError(w http.ResponseWriter, err error) {
 	w.WriteHeader(http.StatusInternalServerError)
-	log.Println(err)
+	log.Error(err)
 }
 
+// ServeHTTP handles HTTP requests using different log levels.
 func (p *PasteHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
+	log.Debug("Received request: ", req.Method, " ", req.URL.Path)
+
 	if req.Method == http.MethodGet {
+		log.Info("Sending index page")
 		w.Header().Set("Content-Type", contentTypeHTML)
 		w.WriteHeader(http.StatusOK)
 		if _, err := w.Write(p.IndexHTML); err != nil {
-			log.Println(err)
+			log.Error("Error sending indexHTML: ", err)
 		}
 		return
 	}
 
 	if req.Method != http.MethodPost {
+		log.Warn("Unsupported request method: ", req.Method)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
 	if err := req.ParseMultipartForm(p.MultipartMaxMemory); err != nil {
+		log.Warn("Error parsing form: ", err)
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
+
 	content := req.Form.Get("content")
 	if len(content) == 0 {
+		log.Warn("Empty form content")
 		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
@@ -65,7 +75,7 @@ func (p *PasteHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	urlRaw := p.ResultURLPrefix + keyRaw
 
 	builder := strings.Builder{}
-	// todo: better templating
+	// todo: use a better templating approach
 	builder.Write(p.OutputHTMLPre)
 	builder.Write([]byte(fmt.Sprintf("<div class=\"nav\"><a href=\"%s\">raw</a></div>", urlRaw)))
 
@@ -79,12 +89,15 @@ func (p *PasteHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		RespondServerInternalError(w, err)
 		return
 	}
+	log.Debug("Uploaded raw content with key: ", keyRaw)
 
 	if err := p.Upload(keyHTML, html, contentTypeHTML); err != nil {
 		RespondServerInternalError(w, err)
 		return
 	}
+	log.Info("Uploaded HTML content with key: ", keyHTML)
 
 	w.Header().Set("Location", urlHTML)
 	w.WriteHeader(http.StatusFound)
+	log.Debug("Redirecting to URL: ", urlHTML)
 }

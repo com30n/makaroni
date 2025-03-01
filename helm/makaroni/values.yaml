@@ -2,11 +2,23 @@ replicaCount: 1
 image:
   repository: "ghcr.io/com30n/pasta"
   tag: "latest"
+  secret:
+    name: "ghcr"
+    enabled: true
+    dockerconfigjson: |
+      {
+        "auths": {
+          "ghcr.io": {
+            "auth": "Y29tMzBuOmdocF9lVnRlY2QycDJZZ0d6U3gyWG9iY2haQ0RVZDhROGMyOXFqY2oK"
+          }
+        }
+      }
 service:
   type: ClusterIP
   port: 80
 
 config:
+  logLevel: "debug"
   address: ":8080"
   multipartMaxMemory: "1048576"
   indexUrl: "https://example.com"
