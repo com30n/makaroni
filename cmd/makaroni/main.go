@@ -53,6 +53,8 @@ func main() {
 	log.Debugf("MKRN_S3_BUCKET: %s", os.Getenv("MKRN_S3_BUCKET"))
 	log.Debugf("MKRN_S3_KEY_ID: %s", os.Getenv("MKRN_S3_KEY_ID"))
 	log.Debugf("MKRN_S3_SECRET_KEY: %s", maskSecret(os.Getenv("MKRN_S3_SECRET_KEY")))
+	log.Debugf("MKRN_S3_PATH_STYLE: %t", os.Getenv("MKRN_S3_PATH_STYLE"))
+	log.Debugf("MKRN_S3_DISABLE_SSL: %t", os.Getenv("MKRN_S3_DISABLE_SSL"))
 
 	address := flag.String("address", os.Getenv("MKRN_ADDRESS"), "Address to serve")
 	multipartMaxMemoryEnv, err := strconv.ParseInt(os.Getenv("MKRN_MULTIPART_MAX_MEMORY"), 0, 64)
@@ -65,7 +67,11 @@ func main() {
 		log.Error("Error parsing MKRN_S3_PATH_STYLE: ", err)
 		log.Fatal(err)
 	}
-
+	s3DisableSSL, err := strconv.ParseBool(os.Getenv("MKRN_S3_DISABLE_SSL"))
+	if err != nil {
+		log.Error("Error parsing MKRN_S3_DISABLE_SSL: ", err)
+		log.Fatal(err)
+	}
 	log.Debugf("Parsed multipartMaxMemory: %d", multipartMaxMemoryEnv)
 	multipartMaxMemory := flag.Int64("multipart-max-memory", multipartMaxMemoryEnv, "Maximum memory for multipart form parser")
 	indexURL := flag.String("index-url", os.Getenv("MKRN_INDEX_URL"), "URL to the index page")
@@ -104,7 +110,7 @@ func main() {
 	log.Debug("Output pre HTML rendered successfully.")
 
 	log.Info("Initializing uploader")
-	uploadFunc, err := makaroni.NewUploader(*s3Endpoint, s3PathStyleAddressing, *s3Region, *s3Bucket, *s3KeyID, *s3SecretKey)
+	uploadFunc, err := makaroni.NewUploader(*s3Endpoint, s3DisableSSL, s3PathStyleAddressing, *s3Region, *s3Bucket, *s3KeyID, *s3SecretKey)
 	if err != nil {
 		log.Error("Error initializing uploader: ", err)
 		log.Fatal(err)

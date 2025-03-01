@@ -28,6 +28,7 @@ config:
   style: "default"
   s3Endpoint: "pasta-makaroni-minio:9000"
   s3PathStyle: "true"
+  s3DisableSsl: "true"
   s3Region: "us-east-1"
   s3Bucket: "my-bucket"
   s3KeyId: "minioadmin"

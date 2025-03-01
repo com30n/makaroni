@@ -30,7 +30,7 @@ spec:
         - name: makaroni
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           command:
-            - ./makanori
+            - ./makaroni
           env:
             - name: LOG_LEVEL
               value: {{ .Values.config.logLevel | quote }}
@@ -52,6 +52,8 @@ spec:
               value: {{ .Values.config.s3Endpoint | quote }}
             - name: MKRN_S3_PATH_STYLE
               value: {{ .Values.config.s3PathStyle | quote }}
+            - name: MKRN_S3_DISABLE_SSL
+              value: {{ .Values.config.s3DisableSsl | quote }}
             - name: MKRN_S3_REGION
               value: {{ .Values.config.s3Region | quote }}
             - name: MKRN_S3_BUCKET
