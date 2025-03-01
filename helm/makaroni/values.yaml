@@ -1,6 +1,6 @@
 replicaCount: 1
 image:
-  repository: "ghcr.io/myuser/makaroni"
+  repository: "ghcr.io/com30n/pasta"
   tag: "latest"
 service:
   type: ClusterIP
