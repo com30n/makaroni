@@ -16,6 +16,10 @@ spec:
       containers:
         - name: minio
           image: "{{ .Values.minio.image }}:{{ .Values.minio.tag }}"
+          {{- if .Values.minio.consolePort }}
+          args:
+            - server --console-address :9090
+          {{- end }}
           env:
             - name: MINIO_ROOT_USER
               value: {{ .Values.minio.rootUser | quote }}
@@ -23,4 +27,7 @@ spec:
               value: {{ .Values.minio.rootPassword | quote }}
           ports:
             - containerPort: {{ .Values.minio.servicePort }}
+            {{- if .Values.minio.consolePort }}
+            - containerPort: {{ .Values.minio.consolePort }}
+            {{- end }}
 {{- end }}

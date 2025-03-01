@@ -26,7 +26,7 @@ config:
   logoUrl: "https://example.com/logo.png"
   faviconUrl: "https://example.com/favicon.ico"
   style: "default"
-  s3Endpoint: "makaroni-minio:9000"
+  s3Endpoint: "pasta-makaroni-minio:9000"
   s3Region: "us-east-1"
   s3Bucket: "my-bucket"
   s3KeyId: "abc123"
@@ -34,9 +34,10 @@ config:
 
 minio:
   enabled: true
-  image: "bitnami/minio"
+  image: "quay.io/minio/minio"
   tag: "latest"
   servicePort: 9000
+  consolePort: 9090
   rootUser: "minioadmin"
   rootPassword: "minioadmin"
 

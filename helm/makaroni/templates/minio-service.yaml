@@ -8,6 +8,14 @@ spec:
   ports:
     - port: {{ .Values.minio.servicePort }}
       targetPort: {{ .Values.minio.servicePort }}
+      name: s3
+    {{- if .Values.minio.consolePort }}
+    - port: {{ .Values.minio.consolePort }}
+      targetPort: {{ .Values.minio.consolePort }}
+      name: console
+    {{- end }}
   selector:
     app: {{ include "makaroni.name" . }}-minio
+---
+
 {{- end }}
