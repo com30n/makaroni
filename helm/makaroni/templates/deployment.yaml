@@ -50,6 +50,8 @@ spec:
               value: {{ .Values.config.style | quote }}
             - name: MKRN_S3_ENDPOINT
               value: {{ .Values.config.s3Endpoint | quote }}
+            - name: MKRN_S3_PATH_STYLE
+              value: {{ .Values.config.s3PathStyle | quote }}
             - name: MKRN_S3_REGION
               value: {{ .Values.config.s3Region | quote }}
             - name: MKRN_S3_BUCKET
@@ -59,4 +61,4 @@ spec:
             - name: MKRN_S3_SECRET_KEY
               value: {{ .Values.config.s3SecretKey | quote }}
           ports:
-            - containerPort: 80
+            - containerPort: 8080

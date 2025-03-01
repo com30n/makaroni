@@ -1,2 +1,3 @@
 ./makaroni
 bin
+helm/makaroni/loca-values.yaml

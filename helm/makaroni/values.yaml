@@ -27,10 +27,11 @@ config:
   faviconUrl: "https://example.com/favicon.ico"
   style: "default"
   s3Endpoint: "pasta-makaroni-minio:9000"
+  s3PathStyle: "true"
   s3Region: "us-east-1"
   s3Bucket: "my-bucket"
-  s3KeyId: "abc123"
-  s3SecretKey: "secret"
+  s3KeyId: "minioadmin"
+  s3SecretKey: "minioadmin"
 
 minio:
   enabled: true

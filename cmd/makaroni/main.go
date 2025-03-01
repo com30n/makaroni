@@ -60,6 +60,12 @@ func main() {
 		log.Error("Error parsing MKRN_MULTIPART_MAX_MEMORY: ", err)
 		log.Fatal(err)
 	}
+	s3PathStyleAddressing, err := strconv.ParseBool(os.Getenv("MKRN_S3_PATH_STYLE"))
+	if err != nil {
+		log.Error("Error parsing MKRN_S3_PATH_STYLE: ", err)
+		log.Fatal(err)
+	}
+
 	log.Debugf("Parsed multipartMaxMemory: %d", multipartMaxMemoryEnv)
 	multipartMaxMemory := flag.Int64("multipart-max-memory", multipartMaxMemoryEnv, "Maximum memory for multipart form parser")
 	indexURL := flag.String("index-url", os.Getenv("MKRN_INDEX_URL"), "URL to the index page")
@@ -98,7 +104,7 @@ func main() {
 	log.Debug("Output pre HTML rendered successfully.")
 
 	log.Info("Initializing uploader")
-	uploadFunc, err := makaroni.NewUploader(*s3Endpoint, *s3Region, *s3Bucket, *s3KeyID, *s3SecretKey)
+	uploadFunc, err := makaroni.NewUploader(*s3Endpoint, s3PathStyleAddressing, *s3Region, *s3Bucket, *s3KeyID, *s3SecretKey)
 	if err != nil {
 		log.Error("Error initializing uploader: ", err)
 		log.Fatal(err)

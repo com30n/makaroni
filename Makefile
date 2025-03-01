@@ -10,7 +10,7 @@ all: build docker-build helm-build
 
 # Build the application
 build:
-	go build -o bin/makaroni .
+	go build -o bin/makaroni cmd/makaroni/main.go
 
 # Run the application with air for development
 dev:

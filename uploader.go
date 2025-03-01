@@ -12,12 +12,13 @@ import (
 type UploadFunc func(key string, content string, contentType string) error
 
 // NewUploader creates and returns a new upload function using S3.
-func NewUploader(endpoint string, region string, bucket string, keyID string, secret string) (UploadFunc, error) {
+func NewUploader(endpoint string, pathStyleAddressing bool, region string, bucket string, keyID string, secret string) (UploadFunc, error) {
 	log.Debug("Creating AWS session")
 	awsSession, err := session.NewSession(&aws.Config{
-		Credentials: credentials.NewStaticCredentials(keyID, secret, ""),
-		Endpoint:    &endpoint,
-		Region:      &region,
+		Credentials:      credentials.NewStaticCredentials(keyID, secret, ""),
+		Endpoint:         &endpoint,
+		Region:           &region,
+		S3ForcePathStyle: &pathStyleAddressing,
 	})
 	if err != nil {
 		log.Error("Failed to create AWS session: ", err)
