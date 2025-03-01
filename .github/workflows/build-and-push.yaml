@@ -30,6 +30,4 @@ jobs:
       -
         name: Build and push from tag
         run: |
-          docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/com30n/pasta:${{ github.ref.name }} --push .
-          docker tag ghcr.io/com30n/pasta:${{ github.ref_name }} ghcr.io/com30n/pasta:latest
-          docker push -t ghcr.io/com30n/pasta
+          docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/com30n/pasta:${{ github.ref_name }} -t ghcr.io/com30n/pasta:latest --push .
