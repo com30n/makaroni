@@ -28,6 +28,6 @@ jobs:
         with:
           push: true
           tags: ghcr.io/com30n/pasta:${{ github.ref_name }},ghcr.io/com30n/pasta:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+#          cache-from: type=gha
+#          cache-to: type=gha,mode=max
           platforms: linux/amd64,linux/arm64
