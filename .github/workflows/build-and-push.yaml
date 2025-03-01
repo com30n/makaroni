@@ -31,4 +31,4 @@ jobs:
         with:
           push: true
           provenance: false
-          tags: com30n/pasta:latest
+          tags: ghcr.io/com30n/pasta:latest
