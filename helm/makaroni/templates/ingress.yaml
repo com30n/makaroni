@@ -1,0 +1,43 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "makaroni.fullname" . }}-pasta
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/use-regex: "true"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ .Values.makaroni.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "makaroni.fullname" . }}
+                port:
+                  number: {{ .Values.makaroni.service.port }}
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "makaroni.fullname" . }}-s3
+  annotations:
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    nginx.ingress.kubernetes.io/rewrite-target: /{{ .Values.makaroni.config.s3Bucket }}/$1
+    nginx.ingress.kubernetes.io/from-to-www-redirect: "true"
+    nginx.ingress.kubernetes.io/upstream-vhost: {{ include "makaroni.fullname" . }}-minio:{{ .Values.minio.servicePort }}
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: {{ .Values.makaroni.ingress.host }}
+      http:
+        paths:
+          - path: {{ .Values.makaroni.config.resultUrlPostfix | trimSuffix "/"}}/(.*)
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ include "makaroni.fullname" . }}-minio
+                port:
+                  number: {{ .Values.minio.servicePort }}

@@ -1,39 +1,43 @@
 replicaCount: 1
-image:
-  repository: "ghcr.io/com30n/pasta"
-  tag: "latest"
-  secret:
-    name: "ghcr"
-    enabled: true
-    dockerconfigjson: |
-      {
-        "auths": {
-          "ghcr.io": {
-            "auth": ""
+makaroni:
+  image:
+    repository: "ghcr.io/com30n/pasta"
+    tag: "latest"
+    secret:
+      name: "ghcr"
+      enabled: true
+      dockerconfigjson: |
+        {
+          "auths": {
+            "ghcr.io": {
+              "auth": ""
+            }
           }
         }
-      }
-service:
-  type: ClusterIP
-  port: 80
+  service:
+    type: ClusterIP
+    port: 80
 
-config:
-  logLevel: "debug"
-  address: ":8080"
-  multipartMaxMemory: "1048576"
-  indexUrl: "https://example.com"
-  resultUrlPrefix: "https://example.com/paste/"
-  logoUrl: "https://example.com/logo.png"
-  faviconUrl: "https://example.com/favicon.ico"
-  style: "default"
-  s3Endpoint: "pasta-makaroni-minio:9000"
-  s3PathStyle: "true"
-  s3DisableSsl: "true"
-  s3Region: "us-east-1"
-  s3Bucket: "my-bucket"
-  s3KeyId: "minioadmin"
-  s3SecretKey: "minioadmin"
+  config:
+    logLevel: "debug"
+    address: ":8080"
+    multipartMaxMemory: "1048576"
+    indexUrl: "http://paste"
+    resultUrlPostfix: "/pasta/"
+    resultUrlPrefix: "http://paste/pasta/"
+    logoUrl: "http://paste/logo.png"
+    faviconUrl: "http://paste/favicon.ico"
+    style: "default"
+    s3Endpoint: "pasta-makaroni-minio:9000"
+    s3PathStyle: "true"
+    s3DisableSsl: "true"
+    s3Region: "us-east-1"
+    s3Bucket: "my-bucket"
+    s3KeyId: "minioadmin"
+    s3SecretKey: "minioadmin"
 
+  ingress:
+    host: "paste"
 minio:
   enabled: true
   image: "quay.io/minio/minio"

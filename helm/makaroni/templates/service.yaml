@@ -3,9 +3,9 @@ kind: Service
 metadata:
   name: {{ include "makaroni.fullname" . }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ .Values.makaroni.service.type }}
   ports:
-    - port: {{ .Values.service.port }}
+    - port: {{ .Values.makaroni.service.port }}
       targetPort: 8080
   selector:
     app: {{ include "makaroni.name" . }}

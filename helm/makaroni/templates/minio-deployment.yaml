@@ -17,7 +17,7 @@ spec:
         - name: minio
           image: "{{ .Values.minio.image }}:{{ .Values.minio.tag }}"
           {{- if .Values.minio.consolePort }}
-          command: ['sh', '-c', 'mkdir -p /data/{{ .Values.config.s3Bucket }} && /usr/bin/minio server /data --console-address=:9090' ]
+          command: ['sh', '-c', 'mkdir -p /data/{{ .Values.makaroni.config.s3Bucket }} && /usr/bin/minio server /data --console-address=:9090 &; && mc alias set myminio http://localhost:9000 {{ .Values.minio.rootUser }} {{ .Values.minio.rootPassword }} && mc policy set public myminio/{{ .Values.makaroni.config.s3Bucket }}' ]
           {{- end }}
           env:
             - name: MINIO_ROOT_USER

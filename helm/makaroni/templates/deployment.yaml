@@ -1,11 +1,11 @@
-{{- if .Values.image.secret.enabled }}
+{{- if .Values.makaroni.image.secret.enabled }}
 apiVersion: v1
 kind: Secret
 metadata:
-  name: {{ .Values.image.secret.name }}
+  name: {{ .Values.makaroni.image.secret.name }}
 type: kubernetes.io/dockerconfigjson
 data:
-  .dockerconfigjson: {{ .Values.image.secret.dockerconfigjson | b64enc }}
+  .dockerconfigjson: {{ .Values.makaroni.image.secret.dockerconfigjson | b64enc }}
 {{- end }}
 ---
 apiVersion: apps/v1
@@ -13,7 +13,7 @@ kind: Deployment
 metadata:
   name: {{ include "makaroni.fullname" . }}
 spec:
-  replicas: {{ .Values.replicaCount }}
+  replicas: {{ .Values.makaroni.replicaCount }}
   selector:
     matchLabels:
       app: {{ include "makaroni.name" . }}
@@ -22,45 +22,45 @@ spec:
       labels:
         app: {{ include "makaroni.name" . }}
     spec:
-      {{- if .Values.image.secret.enabled }}
+      {{- if .Values.makaroni.image.secret.enabled }}
       imagePullSecrets:
-        - name: {{ .Values.image.secret.name }}
+        - name: {{ .Values.makaroni.image.secret.name }}
       {{- end }}
       containers:
         - name: makaroni
-          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          image: "{{ .Values.makaroni.image.repository }}:{{ .Values.makaroni.image.tag }}"
           command:
             - ./makaroni
           env:
             - name: LOG_LEVEL
-              value: {{ .Values.config.logLevel | quote }}
+              value: {{ .Values.makaroni.config.logLevel | quote }}
             - name: MKRN_ADDRESS
-              value: {{ .Values.config.address | quote }}
+              value: {{ .Values.makaroni.config.address | quote }}
             - name: MKRN_MULTIPART_MAX_MEMORY
-              value: {{ .Values.config.multipartMaxMemory | quote }}
+              value: {{ .Values.makaroni.config.multipartMaxMemory | quote }}
             - name: MKRN_INDEX_URL
-              value: {{ .Values.config.indexUrl | quote }}
+              value: {{ .Values.makaroni.config.indexUrl | quote }}
             - name: MKRN_RESULT_URL_PREFIX
-              value: {{ .Values.config.resultUrlPrefix | quote }}
+              value: {{ .Values.makaroni.config.resultUrlPrefix | quote }}
             - name: MKRN_LOGO_URL
-              value: {{ .Values.config.logoUrl | quote }}
+              value: {{ .Values.makaroni.config.logoUrl | quote }}
             - name: MKRN_FAVICON_URL
-              value: {{ .Values.config.faviconUrl | quote }}
+              value: {{ .Values.makaroni.config.faviconUrl | quote }}
             - name: MKRN_STYLE
-              value: {{ .Values.config.style | quote }}
+              value: {{ .Values.makaroni.config.style | quote }}
             - name: MKRN_S3_ENDPOINT
-              value: {{ .Values.config.s3Endpoint | quote }}
+              value: {{ .Values.makaroni.config.s3Endpoint | quote }}
             - name: MKRN_S3_PATH_STYLE
-              value: {{ .Values.config.s3PathStyle | quote }}
+              value: {{ .Values.makaroni.config.s3PathStyle | quote }}
             - name: MKRN_S3_DISABLE_SSL
-              value: {{ .Values.config.s3DisableSsl | quote }}
+              value: {{ .Values.makaroni.config.s3DisableSsl | quote }}
             - name: MKRN_S3_REGION
-              value: {{ .Values.config.s3Region | quote }}
+              value: {{ .Values.makaroni.config.s3Region | quote }}
             - name: MKRN_S3_BUCKET
-              value: {{ .Values.config.s3Bucket | quote }}
+              value: {{ .Values.makaroni.config.s3Bucket | quote }}
             - name: MKRN_S3_KEY_ID
-              value: {{ .Values.config.s3KeyId | quote }}
+              value: {{ .Values.makaroni.config.s3KeyId | quote }}
             - name: MKRN_S3_SECRET_KEY
-              value: {{ .Values.config.s3SecretKey | quote }}
+              value: {{ .Values.makaroni.config.s3SecretKey | quote }}
           ports:
             - containerPort: 8080
