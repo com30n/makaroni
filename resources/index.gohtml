@@ -118,6 +118,58 @@
             font-size: 0.9em;
         }
 
+        /* Add to existing style section */
+        .pastes-section {
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .pastes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .paste-item {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+
+        .paste-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .paste-date {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+
+        .paste-actions a {
+            text-decoration: none;
+            color: var(--primary-color);
+        }
+
+        .paste-actions button {
+            padding: 4px 8px;
+            font-size: 0.9em;
+            background-color: #f44336;
+        }
+
+        .paste-actions button:hover {
+            background-color: #d32f2f;
+        }
+
+        .no-pastes {
+            color: #666;
+            font-style: italic;
+        }
+
         @media (max-width: 600px) {
             .form-actions {
                 flex-direction: column;
@@ -165,8 +217,16 @@
             </div>
         </form>
     </main>
+    <section id="pastesSection" class="pastes-section">
+        <h2>Saved Pastes</h2>
+        <div id="pastesList" class="pastes-list">
+            <!-- Pastes will be displayed here -->
+            <p id="noPastes" class="no-pastes">No saved pastes found</p>
+        </div>
+    </section>
 </div>
 <script>
+    // Functions to handle paste_data cookies and object deletion
     document.addEventListener('DOMContentLoaded', function () {
         const form = document.getElementById('pasteForm');
         const textarea = document.getElementById('content');
@@ -193,7 +253,196 @@
         form.addEventListener('submit', function () {
             localStorage.removeItem('makaroniDraft');
         });
+
+        // Check for paste data cookie and process it
+        checkAndSavePasteData();
+
+        // Display saved pastes
+        displaySavedPastes();
     });
+
+    // Processes paste_data cookie and saves data to localStorage
+    function checkAndSavePasteData() {
+        const cookies = document.cookie.split(';');
+        let pasteDataCookie = null;
+
+        // Find paste_data cookie
+        for (const cookie of cookies) {
+            const [name, value] = cookie.trim().split('=');
+            if (name === 'paste_data') {
+                try {
+                    // Decode base64 to get JSON string
+                    const jsonStr = atob(decodeURIComponent(value));
+                    pasteDataCookie = JSON.parse(jsonStr);
+                    console.log("Successfully parsed cookie:", pasteDataCookie);
+                    break;
+                } catch (e) {
+                    console.error('Error parsing cookie:', e);
+                }
+            }
+        }
+
+        if (!pasteDataCookie) {
+            console.log("No valid paste_data cookie found");
+            return;
+        }
+
+        let storedPastes = JSON.parse(localStorage.getItem('makaroniPastes') || '[]');
+
+        if (pasteDataCookie.objects && pasteDataCookie.objects.length > 0) {
+            const existingKeys = new Set(storedPastes.map(item =>
+                item.objects.map(obj => obj.rawKey)).flat());
+
+            for (const object of pasteDataCookie.objects) {
+                if (!existingKeys.has(object.rawKey)) {
+                    storedPastes.push({
+                        objects: [object],
+                        create_time: pasteDataCookie.create_time
+                    });
+                    console.log("Added new paste:", object.rawKey);
+                }
+            }
+
+            localStorage.setItem('makaroniPastes', JSON.stringify(storedPastes));
+            document.cookie = 'paste_data=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+
+            // Refresh the display immediately after adding new items
+            displaySavedPastes();
+        }
+    }
+
+    // Deletes object by sending DELETE request
+    async function deletePaste(rawKey, htmlKey, deleteKey) {
+        if (!confirm('Are you sure you want to delete this object?')) {
+            return false;
+        }
+
+        try {
+            const response = await fetch(`/?raw=${rawKey}&html=${htmlKey}&key=${deleteKey}`, {
+                method: 'DELETE',
+            });
+
+            if (!response.ok) {
+                throw new Error(`Error deleting object: ${response.status}`);
+            }
+
+            // Update stored data
+            removeObjectFromStorage(rawKey);
+            return true;
+        } catch (error) {
+            console.error('Error deleting object:', error);
+            alert('Failed to delete object. Check console for details.');
+            return false;
+        }
+    }
+
+    // Removes object from localStorage
+    function removeObjectFromStorage(rawKey) {
+        const storedPastes = JSON.parse(localStorage.getItem('makaroniPastes') || '[]');
+
+        // Filter and update stored objects list
+        const updatedPastes = storedPastes.filter(paste => {
+            // Check all objects in paste
+            const remainingObjects = paste.objects.filter(obj => obj.rawKey !== rawKey);
+
+            // If all objects were removed, exclude this paste
+            if (remainingObjects.length === 0) {
+                return false;
+            }
+
+            // Otherwise update objects list
+            paste.objects = remainingObjects;
+            return true;
+        });
+
+        // Update localStorage
+        localStorage.setItem('makaroniPastes', JSON.stringify(updatedPastes));
+
+        // Refresh the display after removal
+        displaySavedPastes();
+    }
+
+    // Display saved pastes from localStorage
+    function displaySavedPastes() {
+        const pastesList = document.getElementById('pastesList');
+        const noPastesMessage = document.getElementById('noPastes');
+        const storedPastes = JSON.parse(localStorage.getItem('makaroniPastes') || '[]');
+
+        if (storedPastes.length === 0) {
+            noPastesMessage.style.display = 'block';
+            return;
+        }
+
+        noPastesMessage.style.display = 'none';
+
+        // Clear previous content except the "no pastes" message
+        while (pastesList.children.length > 1) {
+            pastesList.removeChild(pastesList.firstChild);
+        }
+
+        // Sort pastes by creation time (newest first)
+        storedPastes.sort((a, b) => {
+            const dateA = new Date(a.create_time);
+            const dateB = new Date(b.create_time);
+            return dateB - dateA;
+        });
+
+        // Create and append paste items
+        storedPastes.forEach(paste => {
+            const pasteItem = document.createElement('div');
+            pasteItem.className = 'paste-item';
+
+            const header = document.createElement('div');
+            header.className = 'paste-item-header';
+
+            const dateCreated = document.createElement('span');
+            dateCreated.className = 'paste-date';
+            const pasteDate = new Date(paste.create_time);
+            dateCreated.textContent = `Created: ${pasteDate.toLocaleString()}`;
+
+            header.appendChild(dateCreated);
+            pasteItem.appendChild(header);
+
+            // Add each object in the paste
+            paste.objects.forEach(obj => {
+                const actionDiv = document.createElement('div');
+                actionDiv.className = 'paste-actions';
+
+                // Add view link (HTML version)
+                const viewLink = document.createElement('a');
+                viewLink.href = `/${obj.htmlKey}`;
+                viewLink.textContent = 'View HTML';
+                viewLink.target = '_blank';
+
+                // Add raw link
+                const rawLink = document.createElement('a');
+                rawLink.href = `/${obj.rawKey}`;
+                rawLink.textContent = 'Raw';
+                rawLink.target = '_blank';
+
+                // Add delete button
+                const deleteButton = document.createElement('button');
+                deleteButton.textContent = 'Delete';
+                deleteButton.onclick = async function() {
+                    const success = await deletePaste(obj.rawKey, obj.htmlKey, obj.deleteKey);
+                    if (success) {
+                        // Refresh the list after successful deletion
+                        displaySavedPastes();
+                    }
+                };
+
+                // Add all elements to action div
+                actionDiv.appendChild(viewLink);
+                actionDiv.appendChild(rawLink);
+                actionDiv.appendChild(deleteButton);
+
+                pasteItem.appendChild(actionDiv);
+            });
+
+            // Insert at the beginning to show newest first
+            pastesList.insertBefore(pasteItem, pastesList.firstChild);
+        });
+    }
 </script>
 </body>
 
