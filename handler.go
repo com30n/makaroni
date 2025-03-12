@@ -22,6 +22,10 @@ const (
 	contentTypeText     = "text/plain"
 )
 
+var (
+	ErrEmptyFormContent = errors.New("empty form content")
+)
+
 // PasteHandler structure for handling uploads
 type PasteHandler struct {
 	IndexHTML          []byte
@@ -102,7 +106,7 @@ func (p *PasteHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		p.handleDeleteRequest(w, req)
 	default:
 		log.Warn("Unsupported request method: ", req.Method)
-		RespondWithError(w, http.StatusBadRequest, "Unsupported method", p.Config)
+		p.RespondWithError(w, http.StatusBadRequest, "Unsupported method", p.Config)
 	}
 }
 
@@ -120,13 +124,13 @@ func (p *PasteHandler) handleGetRequest(w http.ResponseWriter) {
 func (p *PasteHandler) handlePostRequest(w http.ResponseWriter, req *http.Request) {
 	if err := req.ParseMultipartForm(p.MultipartMaxMemory); err != nil {
 		log.Warn("Error parsing form: ", err)
-		RespondWithError(w, http.StatusBadRequest, "Invalid form", p.Config)
+		p.RespondWithError(w, http.StatusBadRequest, "Invalid form", p.Config)
 		return
 	}
 
 	keyRaw, keyHtml, keyDelete, err := p.generateKeys()
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Failed to generate keys", p.Config)
+		p.RespondWithError(w, http.StatusInternalServerError, "Failed to generate keys", p.Config)
 		return
 	}
 
@@ -137,9 +141,12 @@ func (p *PasteHandler) handlePostRequest(w http.ResponseWriter, req *http.Reques
 	urlHTML := p.ResultURLPrefix + keyHtml
 	urlRaw := p.ResultURLPrefix + keyRaw
 
-	content, file, header, err := p.getFormContent(req)
+	content, file, header, err := p.getFormContent(w, req)
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Failed to get form content", p.Config)
+		if errors.Is(err, ErrEmptyFormContent) {
+			return // getFormContent already handles the redirect
+		}
+		p.RespondWithError(w, http.StatusInternalServerError, "Failed to get form content", p.Config)
 		return
 	}
 
@@ -151,13 +158,13 @@ func (p *PasteHandler) handlePostRequest(w http.ResponseWriter, req *http.Reques
 	}
 
 	if err != nil {
-		RespondWithError(w, http.StatusInternalServerError, "Failed to process upload", p.Config)
+		p.RespondWithError(w, http.StatusInternalServerError, "Failed to process upload", p.Config)
 		return
 	}
 
 	if err = p.Uploader.UploadString(req.Context(), keyHtml, html, contentTypeHTML, metadata); err != nil {
 		log.Error("Error uploading HTML: ", err)
-		RespondWithError(w, http.StatusInternalServerError, "Failed to upload HTML content", p.Config)
+		p.RespondWithError(w, http.StatusInternalServerError, "Failed to upload HTML content", p.Config)
 		return
 	}
 
@@ -166,8 +173,7 @@ func (p *PasteHandler) handlePostRequest(w http.ResponseWriter, req *http.Reques
 	// Set cookie with paste data
 	p.setCookies(w, keyRaw, keyHtml, keyDelete)
 
-	w.Header().Set("Location", urlHTML)
-	w.WriteHeader(http.StatusFound)
+	p.redirectToURL(w, req, urlHTML)
 	log.Debug("Redirecting to URL: ", urlHTML)
 }
 
@@ -180,7 +186,7 @@ func (p *PasteHandler) handleDeleteRequest(w http.ResponseWriter, req *http.Requ
 
 	if rawKey == "" || deleteKey == "" || htmlKey == "" {
 		log.Warn("Missing required parameters for deletion")
-		RespondWithError(w, http.StatusBadRequest, "Missing required parameters", p.Config)
+		p.RespondWithError(w, http.StatusBadRequest, "Missing required parameters", p.Config)
 		return
 	}
 
@@ -192,14 +198,14 @@ func (p *PasteHandler) handleDeleteRequest(w http.ResponseWriter, req *http.Requ
 		metadata, err := p.Uploader.GetMetadata(req.Context(), key)
 		if err != nil {
 			log.Error("Error retrieving metadata: ", err)
-			RespondWithError(w, http.StatusNotFound, "Metadata not found", p.Config)
+			p.RespondWithError(w, http.StatusNotFound, "Metadata not found", p.Config)
 			return
 		}
 
 		storedDeleteKey, exists := metadata["delete"]
 		if !exists || storedDeleteKey == nil || *storedDeleteKey != deleteKey {
 			log.Warn("Invalid delete key provided for: ", rawKey)
-			RespondWithError(w, http.StatusForbidden, "Invalid delete key", p.Config)
+			p.RespondWithError(w, http.StatusForbidden, "Invalid delete key", p.Config)
 			return
 		}
 	}
@@ -207,7 +213,7 @@ func (p *PasteHandler) handleDeleteRequest(w http.ResponseWriter, req *http.Requ
 	// Delete all objects in a single batch request
 	if err := p.Uploader.DeleteObjects(req.Context(), keysToDelete); err != nil {
 		log.Error("Error deleting objects: ", err)
-		RespondWithError(w, http.StatusInternalServerError, "Failed to delete objects", p.Config)
+		p.RespondWithError(w, http.StatusInternalServerError, "Failed to delete objects", p.Config)
 		return
 	}
 
@@ -311,7 +317,7 @@ func (p *PasteHandler) processTextUpload(req *http.Request, content, keyRaw, url
 }
 
 // getFormContent extracts content, file, and header from the form
-func (p *PasteHandler) getFormContent(req *http.Request) (string, multipart.File, *multipart.FileHeader, error) {
+func (p *PasteHandler) getFormContent(w http.ResponseWriter, req *http.Request) (string, multipart.File, *multipart.FileHeader, error) {
 	content := req.Form.Get("content")
 	file, header, err := req.FormFile("file")
 	if err != nil && !errors.Is(err, http.ErrMissingFile) {
@@ -324,15 +330,22 @@ func (p *PasteHandler) getFormContent(req *http.Request) (string, multipart.File
 	}
 
 	if file == nil && len(content) == 0 {
-		log.Warn("Empty form content")
-		return "", nil, nil, errors.New("empty form content")
+		log.Info("Empty form content, redirecting to index")
+		p.redirectToURL(w, req, "/")
+		return "", nil, nil, ErrEmptyFormContent
 	}
 
 	return content, file, header, nil
 }
 
+// redirectToURL redirects the user to the specified URL.
+func (p *PasteHandler) redirectToURL(w http.ResponseWriter, req *http.Request, urlStr string) {
+	log.Infof("Redirecting to: %s", urlStr)
+	http.Redirect(w, req, urlStr, http.StatusFound)
+}
+
 // RespondWithError sends an HTML error response with the given status code and message.
-func RespondWithError(w http.ResponseWriter, statusCode int, message string, config *Config) {
+func (p *PasteHandler) RespondWithError(w http.ResponseWriter, statusCode int, message string, config *Config) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(statusCode)
 
