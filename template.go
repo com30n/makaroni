@@ -20,12 +20,18 @@ var outputPreHTML []byte
 //go:embed resources/fileDownload.gohtml
 var fileDownloadHTML []byte
 
+//go:embed resources/error.gohtml
+var errorHTML []byte
+
+// IndexData structure for index page
 type IndexData struct {
 	LogoURL    string
 	IndexURL   string
 	LangList   []string
 	FaviconURL string
 }
+
+// FileDownloadData structure for file download page
 type FileDownloadData struct {
 	LogoURL     string
 	IndexURL    string
@@ -35,12 +41,22 @@ type FileDownloadData struct {
 	CanView     bool
 }
 
+// PreData structure for pre page
 type PreData struct {
 	LogoURL     string
 	IndexURL    string
 	FaviconURL  string
 	Content     string
 	DownloadURL string
+}
+
+// ErrorData structure for error page
+type ErrorData struct {
+	StatusCode int
+	Message    string
+	LogoURL    string
+	IndexURL   string
+	FaviconURL string
 }
 
 func renderPageWithData(pageTemplate string, data interface{}) ([]byte, error) {

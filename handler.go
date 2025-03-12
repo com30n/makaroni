@@ -5,18 +5,24 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
-	log "github.com/sirupsen/logrus"
 	"mime/multipart"
 	"net/http"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/google/uuid"
+	log "github.com/sirupsen/logrus"
 )
 
-var contentTypeHTML = "text/html"
-var contentTypeText = "text/plain"
+const (
+	pasteDataCookieName = "paste_data"
+	cookieMaxAge        = 86400 * 365 // 365 days
+	contentTypeHTML     = "text/html"
+	contentTypeText     = "text/plain"
+)
 
+// PasteHandler structure for handling uploads
 type PasteHandler struct {
 	IndexHTML          []byte
 	Uploader           *Uploader
@@ -39,10 +45,9 @@ type PasteData struct {
 	CreateTime time.Time     `json:"create_time"`
 }
 
-// RespondServerInternalError sends a response with status 500 and logs the error.
-func RespondServerInternalError(w http.ResponseWriter, err error) {
-	w.WriteHeader(http.StatusInternalServerError)
-	log.Error(err)
+// SetCommonHeaders sets common headers for the response.
+func SetCommonHeaders(w http.ResponseWriter, contentType string) {
+	w.Header().Set("Content-Type", contentType)
 }
 
 // setCookies adds a cookie with base64-encoded JSON data
@@ -71,13 +76,13 @@ func (p *PasteHandler) setCookies(w http.ResponseWriter, keyRaw, keyHtml, keyDel
 
 	// Set cookie with encoded paste data
 	pasteCookie := &http.Cookie{
-		Name:     "paste_data",
+		Name:     pasteDataCookieName,
 		Value:    encodedData,
 		Path:     "/",
 		Secure:   true,
-		HttpOnly: false,
+		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		MaxAge:   86400 * 30, // 30 days
+		MaxAge:   cookieMaxAge,
 	}
 
 	http.SetCookie(w, pasteCookie)
@@ -88,34 +93,23 @@ func (p *PasteHandler) setCookies(w http.ResponseWriter, keyRaw, keyHtml, keyDel
 func (p *PasteHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	log.Info("Received request: ", req.Method, " ", req.URL.Path)
 
-	if req.Method == http.MethodGet {
+	switch req.Method {
+	case http.MethodGet:
 		p.handleGetRequest(w)
-		return
-	}
-
-	if req.Method == http.MethodDelete {
-		if req.URL.Path == "/" {
-			p.handleDeleteRequest(w, req)
-			return
-		}
-		log.Warn("Invalid DELETE path: ", req.URL.Path)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	if req.Method != http.MethodPost {
+	case http.MethodPost:
+		p.handlePostRequest(w, req)
+	case http.MethodDelete:
+		p.handleDeleteRequest(w, req)
+	default:
 		log.Warn("Unsupported request method: ", req.Method)
-		w.WriteHeader(http.StatusBadRequest)
-		return
+		RespondWithError(w, http.StatusBadRequest, "Unsupported method", p.Config)
 	}
-
-	p.handlePostRequest(w, req)
 }
 
 // handleGetRequest handles GET requests by sending the index page
 func (p *PasteHandler) handleGetRequest(w http.ResponseWriter) {
 	log.Info("Sending index page")
-	w.Header().Set("Content-Type", contentTypeHTML)
+	SetCommonHeaders(w, contentTypeHTML)
 	w.WriteHeader(http.StatusOK)
 	if _, err := w.Write(p.IndexHTML); err != nil {
 		log.Error("Error sending indexHTML: ", err)
@@ -126,13 +120,13 @@ func (p *PasteHandler) handleGetRequest(w http.ResponseWriter) {
 func (p *PasteHandler) handlePostRequest(w http.ResponseWriter, req *http.Request) {
 	if err := req.ParseMultipartForm(p.MultipartMaxMemory); err != nil {
 		log.Warn("Error parsing form: ", err)
-		w.WriteHeader(http.StatusBadRequest)
+		RespondWithError(w, http.StatusBadRequest, "Invalid form", p.Config)
 		return
 	}
 
 	keyRaw, keyHtml, keyDelete, err := p.generateKeys()
 	if err != nil {
-		RespondServerInternalError(w, err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to generate keys", p.Config)
 		return
 	}
 
@@ -143,21 +137,9 @@ func (p *PasteHandler) handlePostRequest(w http.ResponseWriter, req *http.Reques
 	urlHTML := p.ResultURLPrefix + keyHtml
 	urlRaw := p.ResultURLPrefix + keyRaw
 
-	content := req.Form.Get("content")
-	file, header, err := req.FormFile("file")
-	if err != nil && !errors.Is(err, http.ErrMissingFile) {
-		log.Warn("Error retrieving the file: ", err)
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	if file != nil {
-		defer file.Close()
-	}
-
-	if file == nil && len(content) == 0 {
-		log.Warn("Empty form content")
-		w.WriteHeader(http.StatusBadRequest)
+	content, file, header, err := p.getFormContent(req)
+	if err != nil {
+		RespondWithError(w, http.StatusInternalServerError, "Failed to get form content", p.Config)
 		return
 	}
 
@@ -169,13 +151,13 @@ func (p *PasteHandler) handlePostRequest(w http.ResponseWriter, req *http.Reques
 	}
 
 	if err != nil {
-		RespondServerInternalError(w, err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to process upload", p.Config)
 		return
 	}
 
 	if err = p.Uploader.UploadString(req.Context(), keyHtml, html, contentTypeHTML, metadata); err != nil {
 		log.Error("Error uploading HTML: ", err)
-		RespondServerInternalError(w, err)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to upload HTML content", p.Config)
 		return
 	}
 
@@ -198,7 +180,7 @@ func (p *PasteHandler) handleDeleteRequest(w http.ResponseWriter, req *http.Requ
 
 	if rawKey == "" || deleteKey == "" || htmlKey == "" {
 		log.Warn("Missing required parameters for deletion")
-		w.WriteHeader(http.StatusBadRequest)
+		RespondWithError(w, http.StatusBadRequest, "Missing required parameters", p.Config)
 		return
 	}
 
@@ -210,14 +192,14 @@ func (p *PasteHandler) handleDeleteRequest(w http.ResponseWriter, req *http.Requ
 		metadata, err := p.Uploader.GetMetadata(req.Context(), key)
 		if err != nil {
 			log.Error("Error retrieving metadata: ", err)
-			w.WriteHeader(http.StatusNotFound)
+			RespondWithError(w, http.StatusNotFound, "Metadata not found", p.Config)
 			return
 		}
 
-		storedDeleteKey, exists := metadata["Delete"]
+		storedDeleteKey, exists := metadata["delete"]
 		if !exists || storedDeleteKey == nil || *storedDeleteKey != deleteKey {
 			log.Warn("Invalid delete key provided for: ", rawKey)
-			w.WriteHeader(http.StatusForbidden)
+			RespondWithError(w, http.StatusForbidden, "Invalid delete key", p.Config)
 			return
 		}
 	}
@@ -225,7 +207,7 @@ func (p *PasteHandler) handleDeleteRequest(w http.ResponseWriter, req *http.Requ
 	// Delete all objects in a single batch request
 	if err := p.Uploader.DeleteObjects(req.Context(), keysToDelete); err != nil {
 		log.Error("Error deleting objects: ", err)
-		w.WriteHeader(http.StatusInternalServerError)
+		RespondWithError(w, http.StatusInternalServerError, "Failed to delete objects", p.Config)
 		return
 	}
 
@@ -326,4 +308,54 @@ func (p *PasteHandler) processTextUpload(req *http.Request, content, keyRaw, url
 
 	log.Info("Uploaded raw content with key: ", keyRaw)
 	return string(preHtmlPage), nil
+}
+
+// getFormContent extracts content, file, and header from the form
+func (p *PasteHandler) getFormContent(req *http.Request) (string, multipart.File, *multipart.FileHeader, error) {
+	content := req.Form.Get("content")
+	file, header, err := req.FormFile("file")
+	if err != nil && !errors.Is(err, http.ErrMissingFile) {
+		log.Warn("Error retrieving the file: ", err)
+		return "", nil, nil, err
+	}
+
+	if file != nil {
+		defer file.Close()
+	}
+
+	if file == nil && len(content) == 0 {
+		log.Warn("Empty form content")
+		return "", nil, nil, errors.New("empty form content")
+	}
+
+	return content, file, header, nil
+}
+
+// RespondWithError sends an HTML error response with the given status code and message.
+func RespondWithError(w http.ResponseWriter, statusCode int, message string, config *Config) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(statusCode)
+
+	data := ErrorData{
+		StatusCode: statusCode,
+		Message:    message,
+		LogoURL:    config.LogoURL,
+		IndexURL:   config.IndexURL,
+		FaviconURL: config.FaviconURL,
+	}
+
+	html, err := renderPageWithData(string(errorHTML), data)
+	if err != nil {
+		log.Errorf("Error rendering error page: %v", err)
+		_, err = w.Write([]byte("<h1>Internal Server Error</h1>"))
+		if err != nil {
+			log.Errorf("Failed to write error message: %v", err)
+		}
+		return
+	}
+
+	_, err = w.Write(html)
+	if err != nil {
+		log.Errorf("Error writing error response: %v", err)
+	}
 }

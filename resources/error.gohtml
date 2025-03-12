@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error {{.StatusCode}}</title>
+    <link rel="shortcut icon" type="image/png" href="{{.FaviconURL}}">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+
+        .error-container {
+            text-align: center;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header {
+            padding: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .header img {
+            max-height: 60px;
+        }
+
+        h1 {
+            color: #e74c3c;
+        }
+
+        p {
+            color: #333;
+        }
+
+        a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+<div class="error-container">
+    <header class="header">
+        <a href="{{.IndexURL}}"><img src="{{.LogoURL}}" alt="Makaroni Logo"></a>
+    </header>
+    <h1>Error {{.StatusCode}}</h1>
+    <p>{{.Message}}</p>
+    <a href="{{.IndexURL}}">Go Home</a>
+</div>
+</body>
+</html>
