@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/kaero/makaroni"
 	"net/http"
 	"os"
 	"os/signal"
@@ -12,11 +11,41 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/kaero/makaroni"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
+func main() {
+	InitLogger()
+	log.Debug("Application starting (debug level)")
+
+	config, err := LoadConfig()
+	if err != nil {
+		log.Fatalf("Error loading configuration: %v", err)
+	}
+
+	makaroni.LogConfig()
+
+	server, err := SetupServer(config)
+	if err != nil {
+		log.Fatalf("Error setting up server: %v", err)
+	}
+
+	// Start server in a goroutine
+	go func() {
+		log.Infof("Server started on address %s", server.Addr)
+		if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
+			log.Fatalf("Server error: %v", err)
+		}
+	}()
+
+	// Setup graceful shutdown
+	WaitForShutdown(server)
+}
+
+// InitLogger initializes the logger.
 func InitLogger() {
 	log.SetFormatter(&log.TextFormatter{
 		FullTimestamp: true,
@@ -31,9 +60,11 @@ func InitLogger() {
 	log.SetLevel(level)
 }
 
-func main() {
+// LoadConfig loads the configuration from flags and environment variables.
+func LoadConfig() (*makaroni.Config, error) {
 	var config makaroni.Config
-	var rootCmd = &cobra.Command{
+
+	rootCmd := &cobra.Command{
 		Use:   "makaroni",
 		Short: "Makaroni is a paste service",
 		Long:  "A web service for sharing code snippets with syntax highlighting",
@@ -41,42 +72,8 @@ func main() {
 			if err := viper.Unmarshal(&config); err != nil {
 				log.Fatalf("Error parsing configuration: %v", err)
 			}
-
-			makaroni.LogConfig()
-
-			server, err := SetupServer(&config)
-			if err != nil {
-				log.Fatalf("Error setting up server: %v", err)
-			}
-
-			// Start server in a goroutine
-			go func() {
-				log.Infof("Server started on address %s", server.Addr)
-				if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
-					log.Fatalf("Server error: %v", err)
-				}
-			}()
-
-			// Setup graceful shutdown
-			stop := make(chan os.Signal, 1)
-			signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
-			<-stop
-
-			log.Info("Shutdown signal received, stopping server...")
-			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-
-			if err := server.Shutdown(ctx); err != nil {
-				log.Errorf("Server shutdown error: %v", err)
-			}
-
-			log.Info("Server stopped successfully")
 		},
 	}
-
-	// Initialize configuration
-	InitLogger()
-	log.Debug("Application starting (debug level)")
 
 	// Define flags
 	flags := rootCmd.Flags()
@@ -97,7 +94,7 @@ func main() {
 
 	// Bind flags with viper
 	if err := viper.BindPFlags(flags); err != nil {
-		log.Fatalf("Error binding flags: %v", err)
+		return nil, fmt.Errorf("error binding flags: %w", err)
 	}
 
 	// Setup Viper for environment variables
@@ -109,20 +106,35 @@ func main() {
 	makaroni.BindEnvVars(config)
 
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		log.Error(err)
 		os.Exit(1)
 	}
+
+	return &config, nil
 }
 
-// SetupServer creates and configures HTTP server
+// SetupServer creates and configures the HTTP server.
 func SetupServer(config *makaroni.Config) (*http.Server, error) {
-	// Render HTML templates
 	indexHTML, err := makaroni.RenderIndexPage(config.LogoURL, config.IndexURL, config.FaviconURL)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to render index page: %w", err)
 	}
 
-	// Initialize S3 uploader
+	uploader, err := NewS3Uploader(config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create S3 uploader: %w", err)
+	}
+
+	mux := SetupRoutes(indexHTML, uploader, config)
+
+	return &http.Server{
+		Addr:    config.Address,
+		Handler: mux,
+	}, nil
+}
+
+// NewS3Uploader creates a new S3 uploader.
+func NewS3Uploader(config *makaroni.Config) (*makaroni.Uploader, error) {
 	log.Info("Initializing uploader")
 
 	uploaderConfig := makaroni.UploaderConfig{
@@ -142,10 +154,14 @@ func SetupServer(config *makaroni.Config) (*http.Server, error) {
 
 	uploader, err := makaroni.NewUploader(uploaderConfig)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to create uploader: %w", err)
 	}
 
-	// Setup routing
+	return uploader, nil
+}
+
+// SetupRoutes sets up the HTTP routes.
+func SetupRoutes(indexHTML []byte, uploader *makaroni.Uploader, config *makaroni.Config) *http.ServeMux {
 	fileServer := http.FileServer(http.Dir("./resources/static"))
 	mux := http.NewServeMux()
 
@@ -164,10 +180,7 @@ func SetupServer(config *makaroni.Config) (*http.Server, error) {
 
 	// TODO: add an error page
 
-	return &http.Server{
-		Addr:    config.Address,
-		Handler: mux,
-	}, nil
+	return mux
 }
 
 // LogStaticFileRequest middleware for logging requests to static files
@@ -176,4 +189,21 @@ func LogStaticFileRequest(next http.Handler) http.Handler {
 		log.Debug("Received request: ", r.Method, " ", r.URL.Path)
 		next.ServeHTTP(w, r)
 	})
+}
+
+// WaitForShutdown waits for a shutdown signal and gracefully shuts down the server.
+func WaitForShutdown(server *http.Server) {
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, syscall.SIGINT, syscall.SIGTERM)
+	<-stop
+
+	log.Info("Shutdown signal received, stopping server...")
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	if err := server.Shutdown(ctx); err != nil {
+		log.Errorf("Server shutdown error: %v", err)
+	}
+
+	log.Info("Server stopped successfully")
 }
