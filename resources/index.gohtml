@@ -1,382 +1,362 @@
 <!-- resources/index.gohtml -->
 <!DOCTYPE html>
 <html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>Makaroni</title>
-        <link rel="icon" href="{{.FaviconURL}}">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Makaroni</title>
+    <link rel="icon" href="{{.FaviconURL}}">
 
-        <link rel="preconnect" href="https://fonts.googleapis.com">
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-        <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Jua&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&family=Jua&display=swap"
+          rel="stylesheet">
 
-        <style>
+    <style>
 
-            :root {
-                --primary-color: #C2421E;
-                --hover-color: #E7704E;
-                --focus-outline: rgba(74, 134, 232, 0.3);
-                --padding-base: 8px;
-                --fontJua: 400 normal 18px "Jua", sans-serif;
-            }
+        :root {
+            --primary-color: #C2421E;
+            --hover-color: #E7704E;
+            --focus-outline: rgba(74, 134, 232, 0.3);
+            --padding-base: 8px;
+            --fontJua: 400 normal 18px "Jua", sans-serif;
+        }
 
-            .content {
-                margin: 0 auto;
-                padding: 0 16px;
-                max-width: min(100% - 32px, 1296px);
-                line-height: 1.5;
-                color: #000;
-                font-family: "Inter", sans-serif;
-                font-optical-sizing: auto;
-                font-weight: 400;
-                font-style: normal;
-                font-size: 16px;
-            }
+        .content {
+            margin: 0 auto;
+            padding: 0 16px;
+            max-width: min(100% - 32px, 1296px);
+            line-height: 1.5;
+            color: #000;
+            font-family: "Inter", sans-serif;
+            font-optical-sizing: auto;
+            font-weight: 400;
+            font-style: normal;
+            font-size: 16px;
+        }
 
+        .header {
+            margin: 32px 0;
+        }
+
+        .header img {
+            max-height: 74px;
+        }
+
+        .form {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .form__control {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+        }
+
+        .form__select {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .form__select label {
+            font: var(--fontJua);
+        }
+
+        .form__select select {
+            cursor: pointer;
+            padding: 8px 40px 8px 8px;
+            border-radius: 5px;
+            font-size: 18px;
+            border: 1px solid #C2421E;
+            appearance: none;
+        }
+
+        .select_arrow {
+            position: absolute;
+            right: 8px;
+            top: 37px;
+            width: 24px;
+            height: 24px;
+            background-image: url('./static/arrow.svg');
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        .form__upload-file {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            width: 42%;
+            border: 1px solid var(--primary-color);
+            border-radius: 5px;
+        }
+
+        .upload-file__input {
+            position: absolute;
+            opacity: 0;
+            width: 1px;
+            height: 1px;
+            overflow: hidden;
+        }
+
+        .upload-file__label {
+            font: var(--fontJua);
+            background-color: var(--primary-color);
+            color: white;
+            padding: 7px 42px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: background 0.3s;
+            border: none;
+            display: inline-block;
+            line-height: 23px;
+            white-space: nowrap;
+        }
+
+        .upload-file__label:hover {
+            background-color: var(--hover-color);
+        }
+
+        .file-upload__text {
+            font-size: 14px;
+            color: #a1442d;
+            overflow: hidden;
+            white-space: nowrap;
+            text-overflow: ellipsis;
+        }
+
+        select:focus,
+        .upload-file__input:focus + .upload-file__label,
+        textarea:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 2px var(--focus-outline);
+        }
+
+        textarea {
+            display: block;
+            padding: var(--padding-base);
+            width: 100%;
+            min-height: 200px;
+            height: max(300px, 100vh - 350px);
+            box-sizing: border-box;
+            font-family: monospace;
+            font-size: inherit;
+            resize: vertical;
+            border: 3px solid #FFA863;
+            border-radius: 5px;
+        }
+
+        textarea::-webkit-resizer {
+            background-image: url('./static/resizeTextarea.svg');
+            width: 15px;
+            height: 15px;
+            background-repeat: no-repeat;
+            background-position: center;
+        }
+
+        button {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font: var(--fontJua);
+            padding: 8px 60px;
+        }
+
+        button:hover {
+            background-color: var(--hover-color);
+        }
+
+        .form__submit {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hint {
+            color: #C2421E;
+        }
+
+        /* Add to existing style section */
+        .pastes-section {
+            margin-top: 30px;
+            border-top: 1px solid #eee;
+            padding-top: 20px;
+        }
+
+        .pastes-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .paste-item {
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background: #f9f9f9;
+        }
+
+        .paste-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .paste-date {
+            font-size: 0.85em;
+            color: #666;
+        }
+
+
+        .paste-actions a {
+            text-decoration: none;
+            color: var(--primary-color);
+        }
+
+        .paste-actions button {
+            padding: 4px 8px;
+            font-size: 0.9em;
+            background-color: #f44336;
+        }
+
+        .paste-actions button:hover {
+            background-color: #d32f2f;
+        }
+
+        .no-pastes {
+            color: #666;
+            font-style: italic;
+        }
+
+        @media (max-width: 600px) {
             .header {
-                margin: 32px 0;
-            }
-
-            .header img {
-                max-height: 74px;
-            }
-
-            .form {
-                display: flex;
-                flex-direction: column;
-                gap: 16px;
-                margin-bottom: 32px;
+                text-align: center;
             }
 
             .form__control {
-                display: flex;
-                justify-content: space-between;
-                align-items: flex-end;
-            }
-
-            .form__select {
-                position: relative;
-                display: flex;
                 flex-direction: column;
+                align-items: flex-start;
                 gap: 8px;
             }
 
-            .form__select label {
-                font: var(--fontJua);
-            }
-
-            .form__select select {
-                cursor: pointer;
-                padding: 8px 40px 8px 8px;
-                border-radius: 5px;
-                font-size: 18px;
-                border: 1px solid #C2421E;
-                appearance: none;
-            }
-
-            .select_arrow {
-                position: absolute;
-                right: 8px;
-                top: 37px;
-                width: 24px;
-                height: 24px;
-                background-image: url('./static/arrow.svg');
-                background-repeat: no-repeat;
-                background-position: center;
-            }
-
+            .form__select,
             .form__upload-file {
-                display: flex;
-                align-items: center;
-                gap: 10px;
-                width: 42%;
-                border: 1px solid var(--primary-color);
-                border-radius: 5px;
-            }
-
-            .upload-file__input {
-                position: absolute;
-                opacity: 0;
-                width: 1px;
-                height: 1px;
-                overflow: hidden;
-            }
-
-            .upload-file__label {
-                font: var(--fontJua);
-                background-color: var(--primary-color);
-                color: white;
-                padding: 7px 42px;
-                border-radius: 4px;
-                cursor: pointer;
-                transition: background 0.3s;
-                border: none;
-                display: inline-block;
-                line-height: 23px;
-                white-space: nowrap;
-            }
-
-            .upload-file__label:hover {
-                background-color: var(--hover-color);
-            }
-
-            .file-upload__text {
-                font-size: 14px;
-                color: #a1442d;
-                overflow: hidden;
-                white-space: nowrap;
-                text-overflow: ellipsis;
-            }
-
-            select:focus,
-            .upload-file__input:focus + .upload-file__label,
-            textarea:focus {
-                outline: none;
-                border-color: var(--primary-color);
-                box-shadow: 0 0 0 2px var(--focus-outline);
-            }
-
-            textarea {
-                display: block;
-                padding: var(--padding-base);
                 width: 100%;
-                min-height: 200px;
-                height: max(300px, 100vh - 350px);
-                box-sizing: border-box;
-                font-family: monospace;
-                font-size: inherit;
-                resize: vertical;
-                border: 3px solid #FFA863;
-                border-radius: 5px;
             }
+        }
+    </style>
+</head>
 
-            textarea::-webkit-resizer {
-                background-image: url('./static/resizeTextarea.svg');
-                width: 15px;
-                height: 15px;
-                background-repeat: no-repeat;
-                background-position: center;
-            }
-
-            button {
-                background-color: var(--primary-color);
-                color: white;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                font: var(--fontJua);
-                padding: 8px 60px;
-            }
-
-            button:hover {
-                background-color: var(--hover-color);
-            }
-
-            .form__submit {
-                display: flex;
-                align-items: center;
-                gap: 8px;
-            }
-
-            .hint {
-                color: #C2421E;
-            }
-
-            /* Add to existing style section */
-            .pastes-section {
-                margin-top: 30px;
-                border-top: 1px solid #eee;
-                padding-top: 20px;
-            }
-
-            .pastes-list {
-                display: flex;
-                flex-direction: column;
-                gap: 12px;
-            }
-
-            .paste-item {
-                padding: 12px;
-                border: 1px solid #ddd;
-                border-radius: 4px;
-                background: #f9f9f9;
-            }
-
-            .paste-item-header {
-                display: flex;
-                justify-content: space-between;
-                margin-bottom: 8px;
-            }
-
-            .paste-date {
-                font-size: 0.85em;
-                color: #666;
-            }
-
-
-            .paste-actions a {
-                text-decoration: none;
-                color: var(--primary-color);
-            }
-
-            .paste-actions button {
-                padding: 4px 8px;
-                font-size: 0.9em;
-                background-color: #f44336;
-            }
-
-            .paste-actions button:hover {
-                background-color: #d32f2f;
-            }
-
-            .no-pastes {
-                color: #666;
-                font-style: italic;
-            }
-
-            @media (max-width: 600px) {
-                .header {
-                    text-align: center;
-                }
-
-                .form__control {
-                    flex-direction: column;
-                    align-items: flex-start;
-                    gap: 8px;
-                }
-
-                .form__select,
-                .form__upload-file {
-                    width: 100%;
-                }
-            }
-        </style>
-    </head>
-
-    <body class="content">
-        <header class="header">
-            <a href="{{.IndexURL}}"><img src="{{.LogoURL}}" alt="Makaroni Logo"></a>
-        </header>
-        <main>
-            <form action="/" method="post" enctype="multipart/form-data" id="pasteForm" class="form">
-                <div class="form__control">
-                    <div class="form__select">
-                        <label for="syntax">Syntax</label>
-                        <select name="syntax" id="syntax">
-                            <option value="auto">autodetect</option>
-                            <option value="plain">plain text</option>
-                            {{- range .LangList}}
-                                <option value="{{.}}">{{.}}</option>
-                            {{- end}}
-                        </select>
-                        <span class="select_arrow"></span>
-                    </div>
-
-                    <div class="form__upload-file">
-                        <input type="file" name="file" id="file" class="upload-file__input">
-                        <label for="file" class="upload-file__label">Choose File</label>
-                        <span class="file-upload__text">No file chosen</span>
-                    </div>
-                </div>
-
-                <div class="row">
-                    <textarea name="content" id="content" autofocus
-                            placeholder="Paste or type your code here..."></textarea>
-                </div>
-
-                <div class="form__submit">
-                    <button type="submit" class="submit-button" disabled>Paste!</button>
-                    <span class="hint">or press Ctrl+Enter</span>
-                </div>
-            </form>
-        </main>
-        <section id="pastesSection" class="pastes-section">
-            <h2>Saved Pastes</h2>
-            <div id="pastesList" class="pastes-list">
-                <!-- Pastes will be displayed here -->
-                <p id="noPastes" class="no-pastes">No saved pastes found</p>
+<body class="content">
+<header class="header">
+    <a href="{{.IndexURL}}"><img src="{{.LogoURL}}" alt="Makaroni Logo"></a>
+</header>
+<main>
+    <form action="/" method="post" enctype="multipart/form-data" id="pasteForm" class="form">
+        <div class="form__control">
+            <div class="form__select">
+                <label for="syntax">Syntax</label>
+                <select name="syntax" id="syntax">
+                    <option value="auto">autodetect</option>
+                    <option value="plain">plain text</option>
+                    {{- range .LangList}}
+                        <option value="{{.}}">{{.}}</option>
+                    {{- end}}
+                </select>
+                <span class="select_arrow"></span>
             </div>
-        </section>
-        <script>
-            document.addEventListener('DOMContentLoaded', function () {
-                const form = document.getElementById('pasteForm');
-                const textarea = document.getElementById('content');
-                const fileInput = document.querySelector('.upload-file__input');
-                const fileNameInput = document.querySelector('.file-upload__text');
-                const submitButton = form.querySelector('.submit-button');
 
-                function validateForm() {
-                    const isValid = textarea.value.trim() !== "" || fileInput.files.length > 0;
-                    submitButton.disabled = !isValid;
-                    return isValid;
-                }
+            <div class="form__upload-file">
+                <input type="file" name="file" id="file" class="upload-file__input">
+                <label for="file" class="upload-file__label">Choose File</label>
+                <span class="file-upload__text">No file chosen</span>
+            </div>
+        </div>
 
-                textarea.addEventListener("input", validateForm);
-                fileInput.addEventListener("change", (e) => {
-                    validateForm();
-                    this.value = "";
-                    const [file] = e.target.files;
-                    fileNameInput.textContent = file.name;
-                });
+        <div class="row">
+            <textarea name="content" id="content" autofocus placeholder="Paste or type your code here..."></textarea>
+        </div>
 
+        <div class="form__submit">
+            <button type="submit" class="submit-button" disabled>Paste!</button>
+            <span class="hint">or press Ctrl+Enter</span>
+        </div>
+    </form>
+</main>
+<section id="pastesSection" class="pastes-section">
+    <h2>Saved Pastes</h2>
+    <div id="pastesList" class="pastes-list">
+        <!-- Pastes will be displayed here -->
+        <p id="noPastes" class="no-pastes">No saved pastes found</p>
+    </div>
+</section>
+<script>
     // Functions to handle paste_data cookies and object deletion
-                document.addEventListener('DOMContentLoaded', function () {
-                    const form = document.getElementById('pasteForm');
-                    const textarea = document.getElementById('content');
-                    const fileInput = document.querySelector('.upload-file__input');
-                    const fileNameInput = document.querySelector('.file-upload__text');
-                    const submitButton = form.querySelector('.submit-button');
+    document.addEventListener('DOMContentLoaded', function () {
+        const form = document.getElementById('pasteForm');
+        const textarea = document.getElementById('content');
+        const fileInput = document.querySelector('.upload-file__input');
+        const fileNameInput = document.querySelector('.file-upload__text');
+        const submitButton = form.querySelector('.submit-button');
 
-                    function validateForm() {
-                        const isValid = textarea.value.trim() !== "" || fileInput.files.length > 0;
-                        submitButton.disabled = !isValid;
-                        return isValid;
-                    }
+        function validateForm() {
+            const isValid = textarea.value.trim() !== "" || fileInput.files.length > 0;
+            submitButton.disabled = !isValid;
+            return isValid;
+        }
 
-                    textarea.addEventListener("input", validateForm);
-                    fileInput.addEventListener("change", (e) => {
-                        validateForm();
-                        this.value = "";
-                        const [file] = e.target.files;
-                        fileNameInput.textContent = file.name;
-                    });
+        textarea.addEventListener("input", validateForm);
+        fileInput.addEventListener("change", (e) => {
+            validateForm();
+            this.value = "";
+            const [file] = e.target.files;
+            fileNameInput.textContent = file.name;
+        });
 
-                    // Handle Ctrl+Enter submission
-                    document.querySelector('body').addEventListener('keydown', function (event) {
-                        if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-                            if (validateForm()) {
-                                event.preventDefault();
-                                form.submit();
-                                textarea.value = "";
-                                fileInput.value = "";
-                            }
-                        }
-                    });
 
-                    // Save draft to localStorage
-                    textarea.addEventListener('input', function () {
-                        localStorage.setItem('makaroniDraft', this.value);
-                    });
+        // Handle Ctrl+Enter submission
+        document.querySelector('body').addEventListener('keydown', function (event) {
+            if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                if (validateForm()) {
+                    event.preventDefault();
+                    form.submit();
+                    textarea.value = "";
+                    fileInput.value = "";
+                }
+            }
+        });
 
-                    // Restore draft if exists
-                    const savedDraft = localStorage.getItem('makaroniDraft');
-                    if (savedDraft) {
-                        textarea.value = savedDraft;
-                    }
+        // Save draft to localStorage
+        textarea.addEventListener('input', function () {
+            localStorage.setItem('makaroniDraft', this.value);
+        });
 
-                    // Clear draft on submission
-                    form.addEventListener('submit', function (event) {
-                        event.preventDefault();
-                        localStorage.removeItem('makaroniDraft');
-                        this.submit();
-                        this.reset();
-                    });
-                    // Check for paste data cookie and process it
-                    checkAndSavePasteData();
+        // Restore draft if exists
+        const savedDraft = localStorage.getItem('makaroniDraft');
+        if (savedDraft) {
+            textarea.value = savedDraft;
+        }
 
-                    // Display saved pastes
-                    displaySavedPastes();
+        // Clear draft on submission
+        form.addEventListener('submit', function (event) {
+            event.preventDefault();
+            localStorage.removeItem('makaroniDraft');
+            this.submit();
+            this.reset();
+        });
+        // Check for paste data cookie and process it
+        checkAndSavePasteData();
+
+        // Display saved pastes
+        displaySavedPastes();
     });
 
     // Processes paste_data cookie and saves data to localStorage
@@ -541,7 +521,7 @@
                 // Add delete button
                 const deleteButton = document.createElement('button');
                 deleteButton.textContent = 'Delete';
-                deleteButton.onclick = async function() {
+                deleteButton.onclick = async function () {
                     const success = await deletePaste(obj.rawKey, obj.htmlKey, obj.deleteKey);
                     if (success) {
                         // Refresh the list after successful deletion
@@ -561,26 +541,6 @@
             pastesList.insertBefore(pasteItem, pastesList.firstChild);
         });
     }
-                // Handle Ctrl+Enter submission
-                document.querySelector('body').addEventListener('keydown', function (event) {
-                    if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
-                        if (validateForm()) {
-                            event.preventDefault();
-                            form.submit();
-                            textarea.value = "";
-                            fileInput.value = "";
-                        }
-                    }
-                });
-                // Save draft to localStorage
-                textarea.addEventListener('input', function () {
-                    localStorage.setItem('makaroniDraft', this.value);
-                });
-                // Restore draft if exists
-                const savedDraft = localStorage.getItem('makaroniDraft');
-                if (savedDraft) {
-                    textarea.value = savedDraft;
-                }
-        </script>
-    </body>
+</script>
+</body>
 </html>
