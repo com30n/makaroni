@@ -1,4 +1,5 @@
 # Forked from https://github.com/kaero/makaroni
+# Project development has been moved to this repository: https://github.com/com30n/makaroni-enhanced
 
 # Makaroni
 Makaroni is a lightweight pastebin-like application that allows users to create and share text snippets and files.
