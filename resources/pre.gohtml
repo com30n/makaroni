@@ -2,93 +2,65 @@
 <meta charset="utf-8">
 <head>
     <title>Makaroni</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Jua&display=swap" rel="stylesheet">
     <link rel="icon" href="{{.FaviconURL}}">
 </head>
 <style>
     :root {
-        --primary-color: #4a86e8;
-        --hover-color: #3d7bd9;
+        --primary-color: #C2421E;
+        --hover-color: #E7704E;
         --focus-outline: rgba(74, 134, 232, 0.3);
         --padding-base: 8px;
-    }
-
-    body {
-        margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        line-height: 1.5;
-        color: #333;
-    }
-
-    input, select, textarea {
-        font-family: inherit;
-        font-size: 100%;
-        line-height: 1.15;
-        margin: 0;
-        padding: var(--padding-base);
-        border: 1px solid #ccc;
-        border-radius: 4px;
-    }
-
-    input:focus, select:focus, textarea:focus {
-        outline: none;
-        border-color: var(--primary-color);
-        box-shadow: 0 0 0 2px var(--focus-outline);
+        --fontJua: 400 normal 18px "Jua", sans-serif;
     }
 
     .content {
         margin: 0 auto;
-        max-width: min(100% - 32px, 1296px);
         padding: 0 16px;
-        font: 16px sans-serif;
+        max-width: min(100% - 32px, 1296px);
+        line-height: 1.5;
+        color: #000;
+        font-family: "Inter", sans-serif;
+        font-optical-sizing: auto;
+        font-weight: 400;
+        font-style: normal;
+        font-size: 16px;
     }
 
     .header {
-        padding: 10px 0;
-        display: flex;
-        align-items: center;
+        margin: 32px 0;
     }
 
     .header img {
-        max-height: 60px;
+        max-height: 74px;
     }
 
     .view {
-        border: 1px solid #ccc;
-        border-radius: 4px;
         padding: var(--padding-base);
-    }
-    label {
-        display: block;
-        margin-bottom: 6px;
-        font-weight: 500;
-    }
-
-    textarea {
-        display: block;
-        width: 100%;
-        min-height: 200px;
-        height: max(300px, 100vh - 300px);
+        border: 3px solid #FFA863;
+        border-radius: 5px;
+        min-width: 100%;
+        width: fit-content;
         box-sizing: border-box;
-        font-family: monospace;
-        resize: vertical;
     }
 
     button {
         background-color: var(--primary-color);
         color: white;
         border: none;
-        padding: 8px 16px;
         border-radius: 4px;
         cursor: pointer;
-        font-weight: 500;
+        font: var(--fontJua);
+        padding: 8px 60px;
     }
 
     button:hover {
         background-color: var(--hover-color);
     }
 </style>
-<body>
-<div class="content">
+<body class="content">
     <div class="header">
         <a href="{{.IndexURL}}">
             <img src="{{.LogoURL}}" alt="logo">
@@ -102,5 +74,4 @@
     <div class="view">
         {{printf "%s" .Content}}
     </div>
-</div>
 </body>
